@@ -102,7 +102,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     }
     private void needLocation(String next) {
        pending=next;
-       if(!locationAllowed()) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},10);
+       if(!locationAllowed()) requestPermissions(Build.VERSION.SDK_INT >= 31 ? new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION} : new String[]{Manifest.permission.ACCESS_FINE_LOCATION},10);
        else resumePending();
     }
     private void needScan(String next) {
