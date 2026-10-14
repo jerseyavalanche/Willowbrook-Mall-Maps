@@ -56,7 +56,12 @@ import java.util.concurrent.Executors;
 import static org.maplibre.android.style.layers.PropertyFactory.*;
 
 public class MainActivity extends Activity implements LocationListener {
-    private static final String STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
+    private static final String[] THEME_NAMES = {"Afterdark · ocean blue", "Daylight · readable streets", "Midnight · dark charcoal"};
+    private static final String[] THEME_STYLES = {
+        "https://tiles.openfreemap.org/styles/fiord",
+        "https://tiles.openfreemap.org/styles/bright",
+        "https://tiles.openfreemap.org/styles/dark"
+    };
     private static final String DEFAULT_ROUTER = "https://router.project-osrm.org";
     private static final String PREF = "roadnav_local";
     private static final String SOURCE_ROUTE = "route-src", SOURCE_START = "start-src";
@@ -146,7 +151,8 @@ public class MainActivity extends Activity implements LocationListener {
         Button locate=button("GPS ◎",0xff20376e);
         Button voice=button("VOICE OFF",0xff20376e);
         Button stop=button("CLEAR",0xff20376e);
-        tools.addView(locate,weight());tools.addView(voice,weight());tools.addView(stop,weight());
+        Button colors=button("COLORS",0xff60308b);
+        tools.addView(locate,weight());tools.addView(voice,weight());tools.addView(colors,weight());tools.addView(stop,weight());
         bottom.addView(tools);
         FrameLayout.LayoutParams b=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
         b.setMargins(dp(10),0,dp(10),dp(13));root.addView(bottom,b);
@@ -164,6 +170,7 @@ public class MainActivity extends Activity implements LocationListener {
             if(current!=null)moveTo(current,15);
             else requestLocation();
         });
+        colors.setOnClickListener(v->chooseMapTheme());
         voice.setOnClickListener(v->{
             voiceEnabled=!voiceEnabled;
             voice.setText(voiceEnabled?"VOICE ON":"VOICE OFF");
@@ -181,7 +188,7 @@ public class MainActivity extends Activity implements LocationListener {
         });
         mapView.getMapAsync(m->{
             map=m;
-            map.setStyle(STYLE_URL,style->{
+            map.setStyle(selectedStyleUrl(),style->{
                 ready=true;
                 installLayers(style);
                 LatLng initial=new LatLng(41.2230,-74.2880);
@@ -461,8 +468,36 @@ public class MainActivity extends Activity implements LocationListener {
         }
         prefs.edit().putString("reports",a.toString()).apply();
     }
+    private String selectedStyleUrl(){
+        int theme=prefs.getInt("map_theme",0);
+        return THEME_STYLES[Math.max(0,Math.min(THEME_STYLES.length-1,theme))];
+    }
+    private void chooseMapTheme(){
+        final int current=prefs.getInt("map_theme",0);
+        new AlertDialog.Builder(this).setTitle("RoadNav map colors")
+            .setSingleChoiceItems(THEME_NAMES,current,(dialog,selected)->{
+                prefs.edit().putInt("map_theme",selected).apply();
+                dialog.dismiss();
+                applyMapTheme();
+            })
+            .setNegativeButton("Cancel",null).show();
+    }
+    private void applyMapTheme(){
+        if(map==null)return;
+        final int selected=prefs.getInt("map_theme",0);
+        ready=false;
+        banner.setText("Loading "+THEME_NAMES[selected]+" map…");
+        map.setStyle(selectedStyleUrl(),style->{
+            ready=true;
+            installLayers(style);
+            refreshRoute();
+            refreshMarkers();
+            banner.setText("MAP COLORS · "+THEME_NAMES[selected]+" · route preserved");
+            message("Map theme: "+THEME_NAMES[selected]);
+        });
+    }
     private void optionsDialog(){
-        String[] options={"Routing server (HTTPS)","Clear local reports","About and limitations"};
+        String[] options={"Routing server (HTTPS)","Map colors / theme","Clear local reports","About and limitations"};
         new AlertDialog.Builder(this).setTitle("RoadNav settings").setItems(options,(dialog,n)->{
             if(n==0){
                 EditText field=new EditText(this);
@@ -478,10 +513,12 @@ public class MainActivity extends Activity implements LocationListener {
                         prefs.edit().putString("router",url).apply();message("Routing URL saved");
                     }).setNegativeButton("Cancel",null).show();
             }else if(n==1){
+                chooseMapTheme();
+            }else if(n==2){
                 new AlertDialog.Builder(this).setTitle("Erase local reports?")
                     .setPositiveButton("Erase",(d,w)->{reports.clear();persistReports();refreshMarkers();})
                     .setNegativeButton("Cancel",null).show();
-            }else new AlertDialog.Builder(this).setTitle("RoadNav Alpha 0.1")
+            }else new AlertDialog.Builder(this).setTitle("RoadNav Alpha 0.2")
                 .setMessage("Experimental standalone route viewer. MapLibre + OpenStreetMap; routing via chosen OSRM endpoint. No live traffic, public reports, map search, offline routing, or validated driving guidance yet. Never operate the screen while driving.")
                 .setPositiveButton("OK",null).show();
         }).show();
