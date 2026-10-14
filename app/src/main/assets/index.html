@@ -1,0 +1,231 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>RuthMap Afterdark</title>
+<style>
+:root{color-scheme:dark;--cyan:#24efff;--pink:#f200e9}*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:#07113d;color:#d7fbff;font-family:Roboto,Arial,sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;height:100dvh}
+header{flex-shrink:0;padding:12px 16px 7px;background:linear-gradient(#131c64,#0c1654)}
+.eyebrow{font-size:11px;color:#8aaef2;letter-spacing:3px}h1{font-size:31px;font-weight:500;margin:2px 0 13px;color:#58f8ff}
+.search{background:#1329b6;border-radius:23px;height:48px;display:flex;align-items:center;padding:0 14px;gap:11px;color:#51fcff}
+input{background:none;border:none;outline:none;color:#fff;flex:1;font-size:16px;min-width:0}
+input::placeholder{color:#a0bdff}
+main{flex:1;min-height:0;position:relative;overflow:hidden;background:radial-gradient(ellipse at 55% 36%,#1529aa,#0a1361 65%,#060d32)}
+#map{width:100%;height:100%;touch-action:none}.grid{fill:url(#grid)}
+.shape{stroke:#ff2ed8;stroke-width:3.1;stroke-linejoin:round;fill:#091b93b0}
+.corridor{stroke:#19afff20;stroke-width:17;fill:none;stroke-linecap:round}
+.shoplabel{fill:#b5fcff;stroke:#0a145a;stroke-width:4;paint-order:stroke;font-size:18px;text-anchor:middle}
+.shopdot{fill:#1ffafc;filter:url(#glow)}
+#path{fill:none;stroke:#04ffff;stroke-width:5;stroke-linejoin:round;stroke-linecap:round;filter:url(#glow)}
+.pin{fill:#12f6ff;stroke:#bdfaff;stroke-width:2;filter:url(#glow)}
+#floors{position:absolute;right:12px;top:12px;display:flex;background:#0b25b0;border-radius:24px;padding:4px;z-index:2}
+#floors button{border:0;border-radius:50%;background:transparent;color:#76f7ff;font-size:16px;width:36px;height:36px}
+#floors button.sel{background:#ed00d6;color:#fff}
+.side{position:absolute;right:12px;top:35%;z-index:2;display:flex;flex-direction:column;gap:9px}
+.side button,#fit{color:#1df7ff;background:#112dbbf0;border:0;border-radius:19px;font-weight:600;font-size:12px;padding:13px 10px;box-shadow:0 3px 10px #03082270}
+#fit{position:absolute;right:13px;bottom:14px;z-index:2;color:#c3ffff}
+#tip{position:absolute;left:10px;bottom:14px;color:#89bafa;font-size:11px;max-width:66%;text-shadow:0 1px 3px black;pointer-events:none}
+footer{background:#09134f;padding:10px 13px 12px;flex-shrink:0;border-top:1px solid #233e93}
+#mode{font-size:11px;font-weight:700;color:#26eaff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#status{font-size:11px;color:#abcaff;min-height:16px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.controls{display:flex;gap:9px;margin-top:9px}
+.controls button{flex:1;border:0;padding:13px 4px;border-radius:23px;background:#1633bd;color:#bef8ff;font-size:15px}
+.controls .primary{background:linear-gradient(90deg,#c600ff,#ef00c3);color:white}
+.copyright{color:#6b9bea;font-size:9px;text-align:center;margin-top:8px}
+#overlay{position:absolute;inset:0;z-index:8;background:#030720c9;display:none;align-items:flex-end}
+#overlay.open{display:flex}
+#sheet{width:100%;max-height:77%;overflow-y:auto;background:linear-gradient(#152367,#090c3d);border-radius:20px 20px 0 0;padding:17px;border:1px solid #3446b6}
+#sheet h2{font-size:18px;color:#68faff;margin:0 0 12px}
+#close{float:right;border:0;color:#dcffff;background:transparent;font-size:22px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0;background:#112169;border:1px solid #3046ac;border-radius:14px;padding:11px;font-size:13px}
+.item small{display:block;color:#90b5f4;margin-top:4px}
+.item button,.action{border:0;background:#1846ca;color:#e0ffff;padding:9px 12px;border-radius:14px;flex-shrink:0}
+.desc{color:#b0c5ea;font-size:12px;line-height:1.6}
+#toast{display:none;position:absolute;z-index:9;bottom:32%;left:10%;width:80%;text-align:center;padding:13px;border-radius:17px;background:#051a56;border:1px solid #1deaff;color:#d8ffff;font-size:13px}
+</style></head>
+<body>
+<header><div class="eyebrow">RUTHMAP / AFTERDARK</div><h1>Willowbrook</h1>
+<div class="search"><span>⌕</span><input id="search" placeholder="Find a place in the dark…" autocomplete="off"></div></header>
+<main>
+<div id="floors"><button id="b1" onclick="level(1)">1</button><button id="b2" onclick="level(2)">2</button></div>
+<svg id="map" viewBox="0 0 680 900" preserveAspectRatio="xMidYMid meet">
+<defs><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#2d5bc4" stroke-width="0.8" opacity=".24"/></pattern><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="680" height="900" class="grid"/><g id="world"><g id="rooms"></g><g id="labels"></g><path id="path"/><g id="pins"></g>
+<g id="you"><circle r="29" fill="#f900c9" opacity=".19"/><circle r="13" fill="#ef00df" stroke="#ffd6ff" stroke-width="2"/><circle r="5" fill="#86ffff"/></g></g></svg>
+<div class="side"><button onclick="data()">DATA</button><button onclick="scan()">SCAN</button><button onclick="filters()">FILTER</button><button onclick="replay()">REPLAY</button></div>
+<button id="fit" onclick="fit()">Fit map</button><div id="tip">Tap corridor to place dot · drag to pan</div>
+<div id="overlay" onclick="if(event.target===this)closeSheet()"><div id="sheet"><button id="close" onclick="closeSheet()">×</button><h2 id="stitle"></h2><div id="scontent"></div></div></div>
+<div id="toast"></div>
+</main>
+<footer><div id="mode">LEVEL 1 / OFFLINE / INDOOR POSITION UNCALIBRATED</div><div id="status">Survey idle · Saved on this phone</div>
+<div class="controls"><button class="primary" id="survey" onclick="survey()">Field survey</button><button onclick="gps()">Outside / GPS</button></div>
+<div class="copyright">PRIVATE OFFLINE SCHEMATIC · SIGNAL PINS ARE OBSERVATION LOCATIONS</div></footer>
+<script>
+'use strict';
+function el(id){return document.getElementById(id)}
+var NS='http://www.w3.org/2000/svg',key='ruthmap-afterdark-v02';
+var shops=[
+ ['Macy’s',415,48,1],['Apple',315,265,1],['American Eagle',530,267,1],
+ ['Abercrombie & Fitch',315,365,1],['The Cheesecake Factory',548,460,1],
+ ['Sephora',555,580,1],['Bath & Body Works',565,704,1],
+ ['Aéropostale',290,772,1],['Food District',410,839,1],
+ ['JCPenney',580,858,1],['BJ’s',82,660,1],
+ ['Bloomingdale’s',195,185,2],['ZARA',480,240,2],
+ ['Center Court',400,478,2],['Zumiez',465,721,2]
+];
+var l1=[
+ '235,50 598,50 598,122 235,122',
+ '240,130 417,130 417,172 443,197 443,358 425,376 425,428 281,428 250,395 236,395 236,322 276,322 276,298 235,298',
+ '472,145 654,145 654,352 627,352 627,380 472,380',
+ '470,395 627,395 627,443 658,443 658,585 573,585 573,656 470,656',
+ '246,458 430,458 430,678 386,722 245,722 245,666 201,666 201,530 246,530',
+ '465,690 605,690 605,757 541,757 541,843 462,843',
+ '568,773 678,773 678,897 543,897',
+ '0,490 164,490 164,565 200,565 200,748 0,748',
+ '207,748 433,748 433,800 409,822 409,883 235,883 235,847 207,847'
+];
+var l2=['90,148 298,148 298,326 90,326','323,124 581,124 581,315 323,315',
+ '100,380 302,380 302,584 100,584','325,355 600,355 600,559 325,559',
+ '82,640 309,640 309,835 82,835','338,617 620,617 620,835 338,835'];
+var floor=1,pos={x:453,y:522,f:1},placed=false,route=[],pins=[],signals=[],isSurvey=false,gpsFix=null;
+var filter='all',zoom=1,panX=0,panY=0,drag=null,timer=null;
+try{var old=JSON.parse(localStorage.getItem(key)||'{}');if(old.floor)floor=old.floor;if(old.pos)pos=old.pos;if(old.route)route=old.route;if(old.pins)pins=old.pins;placed=!!old.placed}catch(e){}
+function node(tag,attrs,value){var n=document.createElementNS(NS,tag);Object.keys(attrs||{}).forEach(function(k){n.setAttribute(k,attrs[k])});if(value!==undefined)n.textContent=value;return n}
+function persist(){try{localStorage.setItem(key,JSON.stringify({floor:floor,pos:pos,placed:placed,route:route,pins:pins}))}catch(e){}}
+function draw(){
+ el('rooms').replaceChildren();el('labels').replaceChildren();
+ (floor===1?l1:l2).forEach(function(pts){el('rooms').appendChild(node('polygon',{points:pts,'class':'shape'}))});
+ var passages=floor===1?['M452 123V440L446 680L424 814','M220 447H469','M459 690H610']:['M310 158V830','M260 330H580','M250 612H590'];
+ passages.forEach(function(d){el('rooms').appendChild(node('path',{d:d,'class':'corridor'}))});
+ shops.filter(function(s){return s[3]===floor}).forEach(function(s){
+  el('labels').appendChild(node('circle',{cx:s[1],cy:s[2],r:4.5,'class':'shopdot'}));
+  el('labels').appendChild(node('text',{x:s[1],y:s[2]+25,'class':'shoplabel'},s[0]));
+ });
+ el('b1').className=floor===1?'sel':'';el('b2').className=floor===2?'sel':'';
+ el('mode').textContent='LEVEL '+floor+' / OFFLINE / INDOOR POSITION UNCALIBRATED';
+ drawPath();drawPins();persist();
+}
+function drawPath(){
+ var p=route.filter(function(x){return x.f===floor});
+ el('path').setAttribute('d',p.length?'M'+p.map(function(x){return x.x.toFixed(1)+' '+x.y.toFixed(1)}).join(' L'):'');
+ el('you').style.display=placed&&pos.f===floor?'':'none';
+ el('you').setAttribute('transform','translate('+pos.x+' '+pos.y+')');
+}
+function drawPins(){
+ el('pins').replaceChildren();
+ pins.filter(function(p){return p.f===floor&&(filter==='all'||filter===p.kind)}).forEach(function(p){
+  var g=node('g',{transform:'translate('+p.x+' '+p.y+')'});
+  g.appendChild(node('circle',{r:12,fill:'#00ffff20',stroke:'#4cffff','stroke-width':2}));
+  g.appendChild(node('circle',{r:4,'class':'pin'}));
+  if(zoom>1.2)g.appendChild(node('text',{y:-17,'text-anchor':'middle',fill:'#aaffff','font-size':12},p.name.slice(0,22)));
+  el('pins').appendChild(g);
+ });
+}
+function place(x,y,add){
+ pos={x:Math.max(2,Math.min(677,x)),y:Math.max(2,Math.min(897,y)),f:floor};
+ placed=true;
+ if(add!==false){
+  var p={x:pos.x,y:pos.y,f:floor,t:Date.now(),source:'estimated'};
+  var prev=route[route.length-1];
+  if(!prev||Math.hypot(prev.x-p.x,prev.y-p.y)>1||prev.f!==p.f)route.push(p);
+ }
+ drawPath();persist();
+}
+function level(f){floor=f;draw();toast('Level '+f+' · tap to reposition if you switched floors')}
+function survey(){
+ isSurvey=!isSurvey;el('survey').textContent=isSurvey?'Pause walk':'Field survey';
+ el('survey').className=isSurvey?'':'primary';
+ el('status').textContent=isSurvey?'Survey running · tap starting position':'Survey paused · stored on phone';
+ if(window.Ruth)Ruth.survey(isSurvey);
+}
+function gps(){if(window.Ruth)Ruth.gps();else toast('GPS needs the Android app')}
+function scan(){if(window.Ruth){toast('Scanning for signals…');Ruth.scan()}else toast('Scanning requires the Android app')}
+function pinSignal(i){
+ var s=signals[i];if(!s)return;
+ if(!placed){toast('First tap your observation point on the map');return}
+ if(pins.some(function(p){return p.id===s.id&&p.f===floor})){toast('Already pinned here');return}
+ pins.push({name:s.name,kind:s.kind,id:s.id,rssi:s.rssi,x:pos.x,y:pos.y,f:floor,
+ time:new Date().toISOString(),accuracy:'indoor-estimate'});
+ drawPins();persist();closeSheet();toast('Signal observation pinned · '+s.name);
+}
+function safe(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function sheet(title,body){el('stitle').textContent=title;el('scontent').innerHTML=body;el('overlay').className='open'}
+function closeSheet(){el('overlay').className=''}
+function results(){
+ var html='<p class="desc">Choose which nearby signal to pin where your phone observed it. Android can return cached Wi-Fi scans. A sighting is not the transmitter’s location.</p>';
+ if(!signals.length)html+='<p class="desc">No signals. Check Android permissions and Wi-Fi/Bluetooth switches.</p>';
+ signals.forEach(function(s,i){
+  html+='<div class="item"><span><b>'+safe(s.name)+'</b><small>'+safe(s.kind)+' · '+s.rssi+' dBm'+(s.cached?' · cached possible':'')+'</small></span><button onclick="pinSignal('+i+')">PIN</button></div>';
+ });sheet('Detected signals',html);
+}
+function data(){
+ var html='<p class="desc">Walk points: '+route.length+'<br>Signal observations: '+pins.length+
+ '<br>GPS fix: '+(gpsFix?gpsFix.accuracy+' m accuracy':'none')+
+ '<br>Map accuracy: uncalibrated schematic<br>No uploads or accounts.</p>'+
+ '<p class="desc">Pins mark sightings at the estimated PHONE location, not exact device positions.</p>'+
+ '<button class="action" onclick="exportData()">SAVE TO DOWNLOADS</button> '+
+ '<button class="action" onclick="newWalk()">NEW WALK</button>';
+ sheet('Local field data',html);
+}
+function exportData(){
+ var body={schema:'ruthmap-afterdark-v02',mall:'Willowbrook Wayne NJ',
+ mapStatus:'illustrative schematic, not georeferenced',saved:new Date().toISOString(),
+ route:route,signalSightings:pins,gpsLastFix:gpsFix,
+ caution:'Signal pins are the estimated observation points, not transmitter locations.'};
+ if(window.Ruth)Ruth.save(JSON.stringify(body));else toast('Save requires Android APK');
+}
+function newWalk(){if(confirm('Clear walk trail? Signal pins will remain.')){route=[];persist();drawPath();data()}}
+function filters(){
+ var html='<p class="desc">Display pinned signal sightings:</p>';
+ ['all','Wi-Fi','BLE'].forEach(function(f){
+ html+='<div class="item"><b>'+safe(f)+(filter===f?' ✓':'')+'</b><button onclick="setFilter('+JSON.stringify(f)+')">SHOW</button></div>'});
+ sheet('Signal filters',html);
+}
+function setFilter(f){filter=f;drawPins();closeSheet()}
+function replay(){
+ var p=route.filter(function(x){return x.f===floor});
+ if(p.length<2){toast('Record walking points first');return}
+ if(timer)clearInterval(timer);var i=0;el('status').textContent='REPLAY · saved route, NOT live';
+ timer=setInterval(function(){
+ if(i>=p.length){clearInterval(timer);timer=null;toast('Replay finished');return}
+ el('you').style.display='';el('you').setAttribute('transform','translate('+p[i].x+' '+p[i].y+')');i++;
+ },180);
+}
+function fit(){zoom=1;panX=0;panY=0;transform()}
+function transform(){el('world').setAttribute('transform','translate('+panX+' '+panY+') scale('+zoom+')')}
+function toast(msg){el('toast').textContent=msg;el('toast').style.display='block';clearTimeout(window._toast);window._toast=setTimeout(function(){el('toast').style.display='none'},2800)}
+window.ruthNative=function(raw){
+ var m;try{m=JSON.parse(raw)}catch(e){return}var d=m.data||{};
+ if(m.type==='status')el('status').textContent=d.message||'Ready';
+ if(m.type==='gps'){gpsFix=d;el('status').textContent='GPS ±'+Math.round(d.accuracy)+' m · not indoor-calibrated'}
+ if(m.type==='scan'){signals=d.signals||[];results()}
+ if(m.type==='step'&&isSurvey&&placed&&pos.f===floor){
+  var r=d.heading*Math.PI/180;
+  place(pos.x+Math.sin(r)*d.meters*3.2,pos.y-Math.cos(r)*d.meters*3.2,true)
+ }
+};
+var svg=el('map');
+function eventPoint(ev){var p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;return p.matrixTransform(el('world').getScreenCTM().inverse())}
+svg.addEventListener('pointerdown',function(e){drag={x:e.clientX,y:e.clientY,ox:panX,oy:panY,t:Date.now(),moved:false};svg.setPointerCapture(e.pointerId)});
+svg.addEventListener('pointermove',function(e){
+ if(!drag)return;
+ var dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+ if(Math.hypot(dx,dy)>10){drag.moved=true;panX=drag.ox+dx*680/svg.clientWidth;panY=drag.oy+dy*900/svg.clientHeight;transform()}
+});
+svg.addEventListener('pointerup',function(e){
+ if(!drag)return;
+ if(!drag.moved&&Date.now()-drag.t<700){
+  var p=eventPoint(e);place(p.x,p.y,true);
+  el('tip').textContent='Your starting position is an estimate';toast('Starting point placed · survey to walk');
+ }
+ drag=null;
+});
+svg.addEventListener('wheel',function(e){e.preventDefault();zoom=Math.max(.6,Math.min(3,zoom*(e.deltaY<0?1.12:.9)));transform()},{passive:false});
+el('search').addEventListener('input',function(e){
+ var q=e.target.value.trim().toLowerCase();if(q.length<2)return;
+ var hits=shops.filter(function(s){return s[0].toLowerCase().indexOf(q)!==-1});
+ var html=hits.map(function(s){var i=shops.indexOf(s);return '<div class="item"><b>'+safe(s[0])+'</b><button onclick="goShop('+i+')">MAP</button></div>'}).join('');
+ sheet('Find a place',html||'<p class="desc">No matching location label</p>');
+});
+function goShop(i){var s=shops[i];floor=s[3];draw();zoom=1.28;panX=340-s[1]*zoom;panY=450-s[2]*zoom;transform();closeSheet()}
+draw();transform();
+</script></body></html>
