@@ -28,19 +28,19 @@ jobs:
       - name: Verify APK
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
-          cp app/build/outputs/apk/debug/app-debug.apk RoadNav-Alpha-v0.1.apk
-          sha256sum RoadNav-Alpha-v0.1.apk
+          cp app/build/outputs/apk/debug/app-debug.apk RoadNav-Alpha-v0.2.apk
+          sha256sum RoadNav-Alpha-v0.2.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: RoadNav-Alpha-v0.1-APK
-          path: RoadNav-Alpha-v0.1.apk
+          name: RoadNav-Alpha-v0.2-APK
+          path: RoadNav-Alpha-v0.2.apk
           if-no-files-found: error
       - name: Publish beta APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view roadnav-v0.1-alpha >/dev/null 2>&1; then
-            gh release upload roadnav-v0.1-alpha RoadNav-Alpha-v0.1.apk --clobber
+          if gh release view roadnav-v0.2-colors >/dev/null 2>&1; then
+            gh release upload roadnav-v0.2-colors RoadNav-Alpha-v0.2.apk --clobber
           else
-            gh release create roadnav-v0.1-alpha RoadNav-Alpha-v0.1.apk --target "$GITHUB_SHA" --title "RoadNav v0.1 Alpha" --notes "Separate experimental open-source road navigation app. Contains GPS, OpenStreetMap-based MapLibre map, OSRM-based routes, turn preview and local hazards. No live traffic and NOT validated for use while driving." --prerelease
+            gh release create roadnav-v0.2-colors RoadNav-Alpha-v0.2.apk --target "$GITHUB_SHA" --title "RoadNav v0.2 Color Themes" --notes "Separate experimental open-source road navigation app. Contains GPS, MapLibre, three persisted street-map color themes, OSRM-based route preview and local hazards. No live traffic and NOT validated for use while driving." --prerelease
           fi
