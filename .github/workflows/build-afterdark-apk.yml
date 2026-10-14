@@ -1,0 +1,44 @@
+name: Build RuthMap Afterdark APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - ".github/workflows/build-afterdark-apk.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Assemble standalone APK
+        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Check APK
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p release
+          cp app/build/outputs/apk/debug/app-debug.apk release/RuthMap-Afterdark-Willowbrook-v0.2.apk
+          sha256sum release/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RuthMap-Afterdark-Willowbrook-v0.2
+          path: release/*.apk
+          if-no-files-found: error
+      - name: Publish standalone debug APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create afterdark-v0.2-beta release/RuthMap-Afterdark-Willowbrook-v0.2.apk --title "RuthMap Afterdark v0.2 beta" --notes "Standalone Android field mapper. Debug-signed APK. Map geometry is illustrative, indoor positioning is uncalibrated. Pin sightings only; no claims of locating transmitters." --prerelease
