@@ -17,8 +17,9 @@ jobs:
       - name: Install required Android SDK components
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          SM="$(find "$ANDROID_HOME/cmdline-tools" -path "*/bin/sdkmanager" | head -1)"
+          yes | "$SM" --licenses >/dev/null || true
+          "$SM" --install "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
